@@ -790,4 +790,5 @@ const Arachnooa = () => {
   );
 };
 
-export default Arachnooa;
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<Arachnooa />);

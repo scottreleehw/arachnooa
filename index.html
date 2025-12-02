@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arachnooa - Spider Genus Game</title>
+  <title>Arachnooa - Daily Spider Genus Game</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -11,6 +11,124 @@
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" src="arachnooa.jsx"></script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Simple spider database (simplified version)
+    const spiderDatabase = [
+      { genus: "Latrodectus", subfamily: null, family: "Theridiidae", commonName: "Black Widow Spider", searchTerms: ["black widow", "widow spider", "latrodectus"] },
+      { genus: "Phidippus", subfamily: null, family: "Salticidae", commonName: "Bold Jumping Spider", searchTerms: ["bold jumping spider", "phidippus"] },
+      { genus: "Hogna", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Wolf Spider", searchTerms: ["wolf spider", "hogna"] },
+      { genus: "Araneus", subfamily: null, family: "Araneidae", commonName: "Garden Orb Weaver", searchTerms: ["garden orb weaver", "araneus"] },
+      { genus: "Loxosceles", subfamily: null, family: "Sicariidae", commonName: "Brown Recluse", searchTerms: ["brown recluse", "loxosceles"] },
+    ];
+
+    const getDailySpider = () => {
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      return spiderDatabase[seed % spiderDatabase.length];
+    };
+
+    const Arachnooa = () => {
+      const [mysterySpider, setMysterySpider] = useState(null);
+      const [guesses, setGuesses] = useState([]);
+      const [currentGuess, setCurrentGuess] = useState('');
+      const [gameWon, setGameWon] = useState(false);
+      const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+
+      useEffect(() => {
+        setMysterySpider(getDailySpider());
+      }, []);
+
+      const handleInputChange = (e) => {
+        const value = e.target.value;
+        setCurrentGuess(value);
+        if (value.length > 0) {
+          const filtered = spiderDatabase.filter(s => 
+            s.searchTerms.some(term => term.includes(value.toLowerCase()))
+          ).slice(0, 5);
+          setFilteredSuggestions(filtered);
+        } else {
+          setFilteredSuggestions([]);
+        }
+      };
+
+      const handleGuess = (spider) => {
+        if (!spider || !mysterySpider || guesses.some(g => g.genus === spider.genus)) return;
+        
+        const isCorrect = spider.genus === mysterySpider.genus;
+        setGuesses([...guesses, spider]);
+        setCurrentGuess('');
+        setFilteredSuggestions([]);
+        if (isCorrect) setGameWon(true);
+      };
+
+      if (!mysterySpider) return <div>Loading...</div>;
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-8">
+          <div className="max-w-2xl mx-auto">
+            <h1 className="text-5xl font-bold text-center mb-4">🕷️ ARACHNOOA 🕷️</h1>
+            <p className="text-center text-gray-300 mb-8">Guess the spider genus!</p>
+
+            {gameWon && (
+              <div className="bg-green-500/20 border-2 border-green-500 rounded-xl p-6 mb-6 text-center">
+                <h2 className="text-3xl font-bold mb-2">You Won! 🎉</h2>
+                <p>The answer was <span className="text-green-400 font-bold">{mysterySpider.genus}</span></p>
+                <p className="text-sm text-gray-300">({mysterySpider.commonName})</p>
+                <p className="mt-2">Found in {guesses.length} guesses!</p>
+              </div>
+            )}
+
+            {!gameWon && (
+              <div className="mb-6">
+                <input
+                  type="text"
+                  value={currentGuess}
+                  onChange={handleInputChange}
+                  placeholder="Type a spider name..."
+                  className="w-full px-4 py-3 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-400"
+                  autoFocus
+                />
+                {filteredSuggestions.length > 0 && (
+                  <div className="mt-2 bg-slate-800 rounded-xl overflow-hidden">
+                    {filteredSuggestions.map((spider, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleGuess(spider)}
+                        className="px-4 py-3 hover:bg-purple-600/30 cursor-pointer border-b border-white/10 last:border-b-0"
+                      >
+                        <div className="font-bold">{spider.genus}</div>
+                        <div className="text-sm text-gray-400">{spider.commonName}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {guesses.length > 0 && (
+              <div className="bg-white/10 rounded-xl p-6">
+                <h3 className="text-xl font-bold mb-4">Your Guesses:</h3>
+                {guesses.map((guess, idx) => (
+                  <div key={idx} className="bg-white/5 rounded-lg p-3 mb-2">
+                    <span className="font-bold">{guess.genus}</span>
+                    <span className="text-sm text-gray-400 ml-2">({guess.commonName})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <p className="text-center text-gray-500 text-sm mt-8">
+              A new spider every day!
+            </p>
+          </div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Arachnooa />);
+  </script>
 </body>
 </html>

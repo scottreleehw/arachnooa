@@ -1,0 +1,793 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Award, RotateCcw, HelpCircle } from 'lucide-react';
+
+// Spider taxonomy database - Family > Subfamily > Genus (150 species)
+const spiderDatabase = [
+  // Theridiidae (Cobweb spiders)
+  { genus: "Parasteatoda", subfamily: null, family: "Theridiidae", commonName: "American House Spider", searchTerms: ["american house spider", "house spider", "parasteatoda"] },
+  { genus: "Latrodectus", subfamily: null, family: "Theridiidae", commonName: "Black Widow Spider", searchTerms: ["black widow", "widow spider", "latrodectus"] },
+  { genus: "Steatoda", subfamily: null, family: "Theridiidae", commonName: "False Black Widow", searchTerms: ["false black widow", "false widow", "steatoda"] },
+  { genus: "Theridion", subfamily: null, family: "Theridiidae", commonName: "Cobweb Spider", searchTerms: ["cobweb spider", "theridion"] },
+  { genus: "Enoplognatha", subfamily: null, family: "Theridiidae", commonName: "Candy-striped Spider", searchTerms: ["candy striped spider", "enoplognatha"] },
+  { genus: "Argyrodes", subfamily: null, family: "Theridiidae", commonName: "Dewdrop Spider", searchTerms: ["dewdrop spider", "argyrodes"] },
+  { genus: "Anelosimus", subfamily: null, family: "Theridiidae", commonName: "Social Cobweb Spider", searchTerms: ["social cobweb spider", "anelosimus"] },
+  { genus: "Cryptachaea", subfamily: null, family: "Theridiidae", commonName: "False Black Widow", searchTerms: ["false black widow", "cryptachaea"] },
+  { genus: "Euryopis", subfamily: null, family: "Theridiidae", commonName: "Cobweb Spider", searchTerms: ["cobweb spider", "euryopis"] },
+  { genus: "Dipoena", subfamily: null, family: "Theridiidae", commonName: "Cobweb Spider", searchTerms: ["cobweb spider", "dipoena"] },
+
+  // Araneidae (Orb-weavers)
+  { genus: "Araneus", subfamily: null, family: "Araneidae", commonName: "Garden Orb Weaver", searchTerms: ["garden orb weaver", "cross spider", "araneus"] },
+  { genus: "Argiope", subfamily: null, family: "Araneidae", commonName: "Garden Spider", searchTerms: ["garden spider", "writing spider", "argiope"] },
+  { genus: "Neoscona", subfamily: null, family: "Araneidae", commonName: "Spotted Orb Weaver", searchTerms: ["spotted orb weaver", "neoscona"] },
+  { genus: "Cyclosa", subfamily: null, family: "Araneidae", commonName: "Trashline Orbweaver", searchTerms: ["trashline orbweaver", "trash line spider", "cyclosa"] },
+  { genus: "Larinioides", subfamily: null, family: "Araneidae", commonName: "Furrow Spider", searchTerms: ["furrow spider", "larinioides"] },
+  { genus: "Micrathena", subfamily: null, family: "Araneidae", commonName: "Spiny Orb Weaver", searchTerms: ["spiny orb weaver", "micrathena"] },
+  { genus: "Mangora", subfamily: null, family: "Araneidae", commonName: "Orchard Spider", searchTerms: ["orchard spider", "mangora"] },
+  { genus: "Mastophora", subfamily: null, family: "Araneidae", commonName: "Bolas Spider", searchTerms: ["bolas spider", "mastophora"] },
+  { genus: "Zygiella", subfamily: null, family: "Araneidae", commonName: "Missing Sector Orb Weaver", searchTerms: ["missing sector orb weaver", "zygiella"] },
+  { genus: "Eustala", subfamily: null, family: "Araneidae", commonName: "Eustala Orb Weaver", searchTerms: ["eustala orb weaver", "eustala"] },
+  { genus: "Leucauge", subfamily: null, family: "Araneidae", commonName: "Orchard Spider", searchTerms: ["orchard spider", "leucauge"] },
+  { genus: "Metepeira", subfamily: null, family: "Araneidae", commonName: "Colonial Orb Weaver", searchTerms: ["colonial orb weaver", "metepeira"] },
+  { genus: "Gasteracantha", subfamily: null, family: "Araneidae", commonName: "Spiny-backed Orb Weaver", searchTerms: ["spiny backed orb weaver", "crab spider", "gasteracantha"] },
+  { genus: "Trichonephila", subfamily: null, family: "Araneidae", commonName: "Golden Silk Spider", searchTerms: ["golden silk spider", "banana spider", "trichonephila"] },
+  { genus: "Verrucosa", subfamily: null, family: "Araneidae", commonName: "Warty Orb Weaver", searchTerms: ["warty orb weaver", "verrucosa"] },
+  { genus: "Aranella", subfamily: null, family: "Araneidae", commonName: "Miniature Orb Weaver", searchTerms: ["miniature orb weaver", "aranella"] },
+  { genus: "Hypsosinga", subfamily: null, family: "Araneidae", commonName: "Bridge Spider", searchTerms: ["bridge spider", "hypsosinga"] },
+  { genus: "Nuctenea", subfamily: null, family: "Araneidae", commonName: "Orb Weaver", searchTerms: ["orb weaver", "nuctenea"] },
+  { genus: "Aculepeira", subfamily: null, family: "Araneidae", commonName: "Orb Weaver", searchTerms: ["orb weaver", "aculepeira"] },
+
+  // Salticidae (Jumping spiders)
+  { genus: "Phidippus", subfamily: null, family: "Salticidae", commonName: "Bold Jumping Spider", searchTerms: ["bold jumping spider", "phidippus"] },
+  { genus: "Habronattus", subfamily: null, family: "Salticidae", commonName: "Paradise Spider", searchTerms: ["paradise spider", "habronattus"] },
+  { genus: "Salticus", subfamily: null, family: "Salticidae", commonName: "Zebra Spider", searchTerms: ["zebra spider", "salticus"] },
+  { genus: "Platycryptus", subfamily: null, family: "Salticidae", commonName: "Tan Jumping Spider", searchTerms: ["tan jumping spider", "platycryptus"] },
+  { genus: "Maevia", subfamily: null, family: "Salticidae", commonName: "Dimorphic Jumping Spider", searchTerms: ["dimorphic jumping spider", "maevia"] },
+  { genus: "Eris", subfamily: null, family: "Salticidae", commonName: "Eris Jumping Spider", searchTerms: ["eris jumping spider", "eris"] },
+  { genus: "Pelegrina", subfamily: null, family: "Salticidae", commonName: "Pelegrina Jumping Spider", searchTerms: ["pelegrina jumping spider", "pelegrina"] },
+  { genus: "Sitticus", subfamily: null, family: "Salticidae", commonName: "Sitticus Jumping Spider", searchTerms: ["sitticus jumping spider", "sitticus"] },
+  { genus: "Maratus", subfamily: null, family: "Salticidae", commonName: "Peacock Spider", searchTerms: ["peacock spider", "maratus"] },
+  { genus: "Bagheera", subfamily: null, family: "Salticidae", commonName: "Bagheera Jumping Spider", searchTerms: ["bagheera jumping spider", "bagheera"] },
+  { genus: "Myrmarachne", subfamily: null, family: "Salticidae", commonName: "Ant-mimicking Spider", searchTerms: ["ant mimicking spider", "myrmarachne"] },
+  { genus: "Menemerus", subfamily: null, family: "Salticidae", commonName: "Gray Wall Jumping Spider", searchTerms: ["gray wall jumping spider", "menemerus"] },
+  { genus: "Metacyrba", subfamily: null, family: "Salticidae", commonName: "Jumping Spider", searchTerms: ["jumping spider", "metacyrba"] },
+  { genus: "Tutelina", subfamily: null, family: "Salticidae", commonName: "Jumping Spider", searchTerms: ["jumping spider", "tutelina"] },
+  { genus: "Colonus", subfamily: null, family: "Salticidae", commonName: "Colonus Jumping Spider", searchTerms: ["colonus jumping spider", "colonus"] },
+  { genus: "Hentzia", subfamily: null, family: "Salticidae", commonName: "Jumping Spider", searchTerms: ["jumping spider", "hentzia"] },
+  { genus: "Naphrys", subfamily: null, family: "Salticidae", commonName: "Jumping Spider", searchTerms: ["jumping spider", "naphrys"] },
+  { genus: "Zygoballus", subfamily: null, family: "Salticidae", commonName: "Hammerjawed Jumping Spider", searchTerms: ["hammerjawed jumping spider", "zygoballus"] },
+  { genus: "Synageles", subfamily: null, family: "Salticidae", commonName: "Jumping Spider", searchTerms: ["jumping spider", "synageles"] },
+
+  // Lycosidae (Wolf spiders)
+  { genus: "Hogna", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Wolf Spider", searchTerms: ["wolf spider", "carolina wolf spider", "hogna"] },
+  { genus: "Pardosa", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Thin-legged Wolf Spider", searchTerms: ["thin legged wolf spider", "pardosa"] },
+  { genus: "Lycosa", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Wolf Spider", searchTerms: ["wolf spider", "lycosa"] },
+  { genus: "Tigrosa", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Tiger Wolf Spider", searchTerms: ["tiger wolf spider", "tigrosa"] },
+  { genus: "Trochosa", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Wolf Spider", searchTerms: ["wolf spider", "trochosa"] },
+  { genus: "Allocosa", subfamily: "Allocosinae", family: "Lycosidae", commonName: "Burrowing Wolf Spider", searchTerms: ["burrowing wolf spider", "allocosa"] },
+  { genus: "Geolycosa", subfamily: "Allocosinae", family: "Lycosidae", commonName: "Burrowing Wolf Spider", searchTerms: ["burrowing wolf spider", "geolycosa"] },
+  { genus: "Schizocosa", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Striped Wolf Spider", searchTerms: ["striped wolf spider", "schizocosa"] },
+  { genus: "Pirata", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Pirate Wolf Spider", searchTerms: ["pirate wolf spider", "pirata"] },
+  { genus: "Alopecosa", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Wolf Spider", searchTerms: ["wolf spider", "alopecosa"] },
+  { genus: "Varacosa", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Wolf Spider", searchTerms: ["wolf spider", "varacosa"] },
+  { genus: "Rabidosa", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Rabid Wolf Spider", searchTerms: ["rabid wolf spider", "rabidosa"] },
+  { genus: "Arctosa", subfamily: "Lycosinae", family: "Lycosidae", commonName: "Sand Wolf Spider", searchTerms: ["sand wolf spider", "arctosa"] },
+
+  // Pholcidae (Cellar spiders)
+  { genus: "Pholcus", subfamily: null, family: "Pholcidae", commonName: "Cellar Spider", searchTerms: ["cellar spider", "daddy long legs", "pholcus"] },
+  { genus: "Holocnemus", subfamily: null, family: "Pholcidae", commonName: "Marbled Cellar Spider", searchTerms: ["marbled cellar spider", "holocnemus"] },
+  { genus: "Spermophora", subfamily: null, family: "Pholcidae", commonName: "Short-bodied Cellar Spider", searchTerms: ["short bodied cellar spider", "spermophora"] },
+  { genus: "Physocyclus", subfamily: null, family: "Pholcidae", commonName: "Cellar Spider", searchTerms: ["cellar spider", "physocyclus"] },
+
+  // Agelenidae (Funnel weavers)
+  { genus: "Agelenopsis", subfamily: "Ageleninae", family: "Agelenidae", commonName: "Grass Spider", searchTerms: ["grass spider", "funnel weaver", "agelenopsis"] },
+  { genus: "Eratigena", subfamily: "Ageleninae", family: "Agelenidae", commonName: "Hobo Spider", searchTerms: ["hobo spider", "giant house spider", "eratigena"] },
+  { genus: "Tegenaria", subfamily: "Ageleninae", family: "Agelenidae", commonName: "House Spider", searchTerms: ["house spider", "tegenaria"] },
+  { genus: "Hololena", subfamily: "Ageleninae", family: "Agelenidae", commonName: "Funnel Web Spider", searchTerms: ["funnel web spider", "hololena"] },
+
+  // Gnaphosidae (Ground spiders)
+  { genus: "Drassodes", subfamily: null, family: "Gnaphosidae", commonName: "Ground Spider", searchTerms: ["ground spider", "drassodes"] },
+  { genus: "Zelotes", subfamily: null, family: "Gnaphosidae", commonName: "Ground Spider", searchTerms: ["ground spider", "zelotes"] },
+  { genus: "Gnaphosa", subfamily: null, family: "Gnaphosidae", commonName: "Mouse Spider", searchTerms: ["mouse spider", "gnaphosa"] },
+  { genus: "Callilepis", subfamily: null, family: "Gnaphosidae", commonName: "Ground Spider", searchTerms: ["ground spider", "callilepis"] },
+  { genus: "Micaria", subfamily: null, family: "Gnaphosidae", commonName: "Ant-like Ground Spider", searchTerms: ["ant like ground spider", "micaria"] },
+  { genus: "Sergiolus", subfamily: null, family: "Gnaphosidae", commonName: "Ground Spider", searchTerms: ["ground spider", "sergiolus"] },
+  { genus: "Herpyllus", subfamily: null, family: "Gnaphosidae", commonName: "Parson Spider", searchTerms: ["parson spider", "herpyllus"] },
+  { genus: "Cesonia", subfamily: null, family: "Gnaphosidae", commonName: "Ground Spider", searchTerms: ["ground spider", "cesonia"] },
+  { genus: "Drassyllus", subfamily: null, family: "Gnaphosidae", commonName: "Ground Spider", searchTerms: ["ground spider", "drassyllus"] },
+
+  // Thomisidae (Crab spiders)
+  { genus: "Misumena", subfamily: null, family: "Thomisidae", commonName: "Goldenrod Crab Spider", searchTerms: ["goldenrod crab spider", "flower crab spider", "misumena"] },
+  { genus: "Xysticus", subfamily: null, family: "Thomisidae", commonName: "Ground Crab Spider", searchTerms: ["ground crab spider", "xysticus"] },
+  { genus: "Misumenops", subfamily: null, family: "Thomisidae", commonName: "Crab Spider", searchTerms: ["crab spider", "misumenops"] },
+  { genus: "Thomisus", subfamily: null, family: "Thomisidae", commonName: "Flower Crab Spider", searchTerms: ["flower crab spider", "thomisus"] },
+  { genus: "Mecaphesa", subfamily: null, family: "Thomisidae", commonName: "Crab Spider", searchTerms: ["crab spider", "mecaphesa"] },
+  { genus: "Ozyptila", subfamily: null, family: "Thomisidae", commonName: "Crab Spider", searchTerms: ["crab spider", "ozyptila"] },
+  { genus: "Synema", subfamily: null, family: "Thomisidae", commonName: "Crab Spider", searchTerms: ["crab spider", "synema"] },
+  { genus: "Tmarus", subfamily: null, family: "Thomisidae", commonName: "Bark Crab Spider", searchTerms: ["bark crab spider", "tmarus"] },
+  { genus: "Bassaniana", subfamily: null, family: "Thomisidae", commonName: "Bark Crab Spider", searchTerms: ["bark crab spider", "bassaniana"] },
+  { genus: "Coriarachne", subfamily: null, family: "Thomisidae", commonName: "Bark Crab Spider", searchTerms: ["bark crab spider", "coriarachne"] },
+  { genus: "Misumenoides", subfamily: null, family: "Thomisidae", commonName: "Crab Spider", searchTerms: ["crab spider", "misumenoides"] },
+
+  // Linyphiidae (Sheet weavers)
+  { genus: "Neriene", subfamily: null, family: "Linyphiidae", commonName: "Money Spider", searchTerms: ["money spider", "filmy dome spider", "neriene"] },
+  { genus: "Linyphia", subfamily: null, family: "Linyphiidae", commonName: "Sheet Weaver", searchTerms: ["sheet weaver", "linyphia"] },
+  { genus: "Erigone", subfamily: null, family: "Linyphiidae", commonName: "Dwarf Spider", searchTerms: ["dwarf spider", "erigone"] },
+  { genus: "Frontinella", subfamily: null, family: "Linyphiidae", commonName: "Bowl and Doily Spider", searchTerms: ["bowl and doily spider", "frontinella"] },
+  { genus: "Pityohyphantes", subfamily: null, family: "Linyphiidae", commonName: "Hammock Spider", searchTerms: ["hammock spider", "pityohyphantes"] },
+  { genus: "Microlinyphia", subfamily: null, family: "Linyphiidae", commonName: "Money Spider", searchTerms: ["money spider", "microlinyphia"] },
+  { genus: "Florinda", subfamily: null, family: "Linyphiidae", commonName: "Sheetweb Weaver", searchTerms: ["sheetweb weaver", "florinda"] },
+
+  // Other families
+  { genus: "Cheiracanthium", subfamily: null, family: "Cheiracanthiidae", commonName: "Yellow Sac Spider", searchTerms: ["yellow sac spider", "cheiracanthium"] },
+  { genus: "Loxosceles", subfamily: null, family: "Sicariidae", commonName: "Brown Recluse Spider", searchTerms: ["brown recluse", "recluse spider", "loxosceles"] },
+  { genus: "Aphonopelma", subfamily: null, family: "Theraphosidae", commonName: "Tarantula", searchTerms: ["tarantula", "aphonopelma"] },
+  { genus: "Grammostola", subfamily: null, family: "Theraphosidae", commonName: "Tarantula", searchTerms: ["tarantula", "grammostola"] },
+  { genus: "Brachypelma", subfamily: null, family: "Theraphosidae", commonName: "Mexican Red-knee Tarantula", searchTerms: ["mexican red knee tarantula", "tarantula", "brachypelma"] },
+  { genus: "Lasiodora", subfamily: null, family: "Theraphosidae", commonName: "Brazilian Salmon Tarantula", searchTerms: ["brazilian salmon tarantula", "tarantula", "lasiodora"] },
+  { genus: "Olios", subfamily: null, family: "Sparassidae", commonName: "Huntsman Spider", searchTerms: ["huntsman spider", "olios"] },
+  { genus: "Heteropoda", subfamily: null, family: "Sparassidae", commonName: "Giant Huntsman Spider", searchTerms: ["giant huntsman spider", "huntsman spider", "heteropoda"] },
+  { genus: "Peucetia", subfamily: null, family: "Oxyopidae", commonName: "Green Lynx Spider", searchTerms: ["green lynx spider", "peucetia"] },
+  { genus: "Oxyopes", subfamily: null, family: "Oxyopidae", commonName: "Lynx Spider", searchTerms: ["lynx spider", "oxyopes"] },
+  { genus: "Dolomedes", subfamily: null, family: "Pisauridae", commonName: "Fishing Spider", searchTerms: ["fishing spider", "dock spider", "dolomedes"] },
+  { genus: "Pisaurina", subfamily: null, family: "Pisauridae", commonName: "Nursery Web Spider", searchTerms: ["nursery web spider", "pisaurina"] },
+  { genus: "Clubiona", subfamily: null, family: "Clubionidae", commonName: "Sac Spider", searchTerms: ["sac spider", "clubiona"] },
+  { genus: "Elaver", subfamily: null, family: "Clubionidae", commonName: "Sac Spider", searchTerms: ["sac spider", "elaver"] },
+  { genus: "Philodromus", subfamily: null, family: "Philodromidae", commonName: "Running Crab Spider", searchTerms: ["running crab spider", "philodromus"] },
+  { genus: "Tibellus", subfamily: null, family: "Philodromidae", commonName: "Slender Crab Spider", searchTerms: ["slender crab spider", "tibellus"] },
+  { genus: "Tetragnatha", subfamily: null, family: "Tetragnathidae", commonName: "Long-jawed Orb Weaver", searchTerms: ["long jawed orb weaver", "tetragnatha"] },
+  { genus: "Meta", subfamily: null, family: "Tetragnathidae", commonName: "Cave Orb Weaver", searchTerms: ["cave orb weaver", "meta"] },
+  { genus: "Uloborus", subfamily: null, family: "Uloboridae", commonName: "Feather-legged Spider", searchTerms: ["feather legged spider", "uloborus"] },
+  { genus: "Hyptiotes", subfamily: null, family: "Uloboridae", commonName: "Triangle Spider", searchTerms: ["triangle spider", "hyptiotes"] },
+  { genus: "Dictyna", subfamily: null, family: "Dictynidae", commonName: "Mesh Web Weaver", searchTerms: ["mesh web weaver", "dictyna"] },
+  { genus: "Cicurina", subfamily: null, family: "Dictynidae", commonName: "Cave Spider", searchTerms: ["cave spider", "cicurina"] },
+  { genus: "Scytodes", subfamily: null, family: "Scytodidae", commonName: "Spitting Spider", searchTerms: ["spitting spider", "scytodes"] },
+  { genus: "Mimetus", subfamily: null, family: "Mimetidae", commonName: "Pirate Spider", searchTerms: ["pirate spider", "mimetus"] },
+  { genus: "Ero", subfamily: null, family: "Mimetidae", commonName: "Pirate Spider", searchTerms: ["pirate spider", "ero"] },
+  { genus: "Nesticus", subfamily: null, family: "Nesticidae", commonName: "Cave Cobweb Spider", searchTerms: ["cave cobweb spider", "nesticus"] },
+  { genus: "Cupiennius", subfamily: null, family: "Ctenidae", commonName: "Wandering Spider", searchTerms: ["wandering spider", "cupiennius"] },
+  { genus: "Phoneutria", subfamily: null, family: "Ctenidae", commonName: "Brazilian Wandering Spider", searchTerms: ["brazilian wandering spider", "banana spider", "phoneutria"] },
+  { genus: "Dysdera", subfamily: null, family: "Dysderidae", commonName: "Woodlouse Spider", searchTerms: ["woodlouse spider", "dysdera"] },
+  { genus: "Scotinella", subfamily: null, family: "Liocranidae", commonName: "False Wolf Spider", searchTerms: ["false wolf spider", "scotinella"] },
+  { genus: "Zoropsis", subfamily: null, family: "Zoropsidae", commonName: "False Wolf Spider", searchTerms: ["false wolf spider", "zoropsis"] },
+  { genus: "Oecobius", subfamily: null, family: "Oecobiidae", commonName: "Disc Web Spider", searchTerms: ["disc web spider", "oecobius"] },
+  { genus: "Kukulcania", subfamily: null, family: "Filistatidae", commonName: "Southern House Spider", searchTerms: ["southern house spider", "kukulcania"] },
+  { genus: "Castianeira", subfamily: null, family: "Corinnidae", commonName: "Ant-mimicking Sac Spider", searchTerms: ["ant mimicking sac spider", "castianeira"] },
+  { genus: "Trachelas", subfamily: null, family: "Corinnidae", commonName: "Broad-faced Sac Spider", searchTerms: ["broad faced sac spider", "trachelas"] },
+  { genus: "Syspira", subfamily: null, family: "Miturgidae", commonName: "Prowling Spider", searchTerms: ["prowling spider", "syspira"] },
+  { genus: "Selenops", subfamily: null, family: "Selenopidae", commonName: "Wall Crab Spider", searchTerms: ["wall crab spider", "selenops"] },
+  { genus: "Oonops", subfamily: null, family: "Oonopidae", commonName: "Goblin Spider", searchTerms: ["goblin spider", "oonops"] },
+  { genus: "Mysmenopsis", subfamily: null, family: "Mysmenidae", commonName: "Dwarf Cobweb Spider", searchTerms: ["dwarf cobweb spider", "mysmenopsis"] },
+  { genus: "Deinopis", subfamily: null, family: "Deinopidae", commonName: "Net-casting Spider", searchTerms: ["net casting spider", "ogre faced spider", "deinopis"] },
+  { genus: "Neoantistea", subfamily: null, family: "Hahniidae", commonName: "Dwarf Sheet Spider", searchTerms: ["dwarf sheet spider", "neoantistea"] },
+  { genus: "Callobius", subfamily: null, family: "Amaurobiidae", commonName: "Hackled Mesh Weaver", searchTerms: ["hackled mesh weaver", "callobius"] },
+  { genus: "Ariadna", subfamily: null, family: "Segestriidae", commonName: "Tube Dwelling Spider", searchTerms: ["tube dwelling spider", "ariadna"] },
+  { genus: "Phrurotimpus", subfamily: null, family: "Phrurolithidae", commonName: "Red-spotted Ant Mimic", searchTerms: ["red spotted ant mimic", "phrurotimpus"] },
+  { genus: "Lutica", subfamily: null, family: "Zodariidae", commonName: "Ant-eating Spider", searchTerms: ["ant eating spider", "lutica"] },
+  { genus: "Anyphaena", subfamily: null, family: "Anyphaenidae", commonName: "Ghost Spider", searchTerms: ["ghost spider", "anyphaena"] },
+  { genus: "Hibana", subfamily: null, family: "Anyphaenidae", commonName: "Garden Ghost Spider", searchTerms: ["garden ghost spider", "hibana"] },
+  { genus: "Badumna", subfamily: null, family: "Desidae", commonName: "Black House Spider", searchTerms: ["black house spider", "badumna"] },
+  { genus: "Ummidia", subfamily: null, family: "Ctenizidae", commonName: "Trapdoor Spider", searchTerms: ["trapdoor spider", "ummidia"] },
+  { genus: "Bothriocyrtum", subfamily: null, family: "Ctenizidae", commonName: "Trapdoor Spider", searchTerms: ["trapdoor spider", "bothriocyrtum"] },
+  { genus: "Antrodiaetus", subfamily: null, family: "Antrodiaetidae", commonName: "Folding-door Spider", searchTerms: ["folding door spider", "antrodiaetus"] },
+  { genus: "Sphodros", subfamily: null, family: "Atypidae", commonName: "Purseweb Spider", searchTerms: ["purseweb spider", "sphodros"] },
+  { genus: "Atrax", subfamily: null, family: "Atracidae", commonName: "Sydney Funnel-web Spider", searchTerms: ["sydney funnel web spider", "atrax"] },
+  { genus: "Hadronyche", subfamily: null, family: "Hexathelidae", commonName: "Funnel-web Spider", searchTerms: ["funnel web spider", "hadronyche"] },
+];
+
+// Get daily spider based on date
+const getDailySpider = () => {
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  const index = seed % spiderDatabase.length;
+  return spiderDatabase[index];
+};
+
+// Build tree structure from guesses
+const buildTreeStructure = (guesses, mysterySpider) => {
+  const nodes = new Map();
+  const edges = [];
+  
+  // Always add root
+  nodes.set('Araneae', {
+    id: 'Araneae',
+    name: 'Araneae',
+    level: 'order',
+    x: 0,
+    y: 0,
+    isAnswer: false
+  });
+
+  guesses.forEach((guess, guessIndex) => {
+    const spider = guess.spider;
+    const path = [];
+    
+    // Build path: order -> family -> subfamily -> genus
+    path.push({ id: 'Araneae', name: 'Araneae', level: 'order' });
+    
+    if (spider.family) {
+      path.push({ id: spider.family, name: spider.family, level: 'family' });
+    }
+    
+    if (spider.subfamily) {
+      path.push({ id: spider.subfamily, name: spider.subfamily, level: 'subfamily' });
+    }
+    
+    path.push({ 
+      id: spider.genus, 
+      name: spider.commonName, 
+      level: 'genus',
+      isAnswer: spider.genus === mysterySpider.genus
+    });
+
+    // Add nodes and edges
+    for (let i = 0; i < path.length; i++) {
+      const node = path[i];
+      if (!nodes.has(node.id)) {
+        nodes.set(node.id, { ...node, guessIndex });
+      }
+      
+      if (i > 0) {
+        const parent = path[i - 1];
+        const edgeId = `${parent.id}-${node.id}`;
+        if (!edges.some(e => e.id === edgeId)) {
+          edges.push({ 
+            id: edgeId, 
+            from: parent.id, 
+            to: node.id,
+            guessIndex 
+          });
+        }
+      }
+    }
+  });
+
+  return { nodes: Array.from(nodes.values()), edges };
+};
+
+// Calculate node positions in a tree layout
+const calculateLayout = (nodes, edges) => {
+  const levels = { order: 0, family: 1, subfamily: 2, genus: 3 };
+  const levelHeight = 120;
+  
+  // Build parent-child relationships
+  const childrenMap = new Map();
+  edges.forEach(edge => {
+    if (!childrenMap.has(edge.from)) {
+      childrenMap.set(edge.from, []);
+    }
+    childrenMap.get(edge.from).push(edge.to);
+  });
+
+  // Position nodes recursively from root
+  const positionNode = (nodeId, x, level) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return { x, width: 0 };
+
+    const children = childrenMap.get(nodeId) || [];
+    
+    if (children.length === 0) {
+      // Leaf node
+      const nameLength = node.name.length;
+      const nodeWidth = Math.max(nameLength * 10, 200);
+      node.x = x + nodeWidth / 2; // Center the node in its allocated space
+      node.y = 40 + level * levelHeight;
+      // Add 10px spacing buffer for all leaf nodes (genus level)
+      const spacingBuffer = node.level === 'genus' ? 10 : 0;
+      return { x: x, width: nodeWidth + spacingBuffer };
+    }
+
+    // Position children first
+    let childX = x;
+    const childPositions = [];
+    let totalChildWidth = 0;
+
+    children.forEach((childId, idx) => {
+      const childNode = nodes.find(n => n.id === childId);
+      const childLevel = levels[childNode.level];
+      const result = positionNode(childId, childX, childLevel);
+      childPositions.push(result.x);
+      childX += result.width; // Move to next position including spacing
+      totalChildWidth += result.width;
+    });
+
+    // Position parent centered above children
+    if (childPositions.length > 0) {
+      const leftmost = childPositions[0];
+      const rightmost = childPositions[childPositions.length - 1];
+      node.x = (leftmost + rightmost) / 2;
+    } else {
+      node.x = x;
+    }
+    node.y = 40 + level * levelHeight;
+
+    return { x: x, width: totalChildWidth };
+  };
+
+  // Start from root
+  positionNode('Araneae', 400, 0);
+
+  return nodes;
+};
+
+// SVG Tree Component
+const SVGTree = ({ guesses, mysterySpider }) => {
+  const { nodes, edges } = buildTreeStructure(guesses, mysterySpider);
+  const positionedNodes = calculateLayout(nodes, edges);
+  
+  const getLevelColor = (level) => {
+    switch (level) {
+      case 'order': return 'rgb(139, 92, 246)'; // Purple
+      case 'family': return 'rgb(59, 130, 246)'; // Blue
+      case 'subfamily': return 'rgb(16, 185, 129)'; // Teal
+      case 'genus': return 'rgb(34, 197, 94)'; // Green
+      default: return 'rgb(107, 114, 128)'; // Gray
+    }
+  };
+
+  const getNodeById = (id) => positionedNodes.find(n => n.id === id);
+
+  // Create curved path between two points
+  const createCurvePath = (x1, y1, x2, y2, fromNode, toNode) => {
+    // Calculate node heights for proper connection points
+    const fromLines = fromNode.name.split(' ').reduce((lines, word) => {
+      const lastLine = lines[lines.length - 1] || '';
+      if ((lastLine + word).length > 20 && lastLine.length > 0) {
+        lines.push(word);
+      } else {
+        lines[lines.length - 1] = lastLine ? lastLine + ' ' + word : word;
+      }
+      return lines;
+    }, ['']);
+    const toLines = toNode.name.split(' ').reduce((lines, word) => {
+      const lastLine = lines[lines.length - 1] || '';
+      if ((lastLine + word).length > 20 && lastLine.length > 0) {
+        lines.push(word);
+      } else {
+        lines[lines.length - 1] = lastLine ? lastLine + ' ' + word : word;
+      }
+      return lines;
+    }, ['']);
+    
+    const fromHeight = Math.max(30, fromLines.length * 16 + 8);
+    const toHeight = Math.max(30, toLines.length * 16 + 8);
+    
+    const startY = y1 + fromHeight / 2;
+    const endY = y2 - toHeight / 2;
+    const midY = (startY + endY) / 2;
+    
+    return `M${x1},${startY}C${x1},${midY},${x2},${midY},${x2},${endY}`;
+  };
+
+  const calculatePathLength = (x1, y1, x2, y2) => {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  };
+
+  const animationDuration = 0.5;
+  const animationDelay = 0.5;
+
+  // Calculate the actual width needed for the tree
+  const minX = Math.min(...positionedNodes.map(n => n.x)) - 150;
+  const maxX = Math.max(...positionedNodes.map(n => n.x)) + 150;
+  const treeWidth = maxX - minX;
+  const treeHeight = Math.max(550, positionedNodes.length * 60);
+
+  return (
+    <svg 
+      width="100%" 
+      height={treeHeight} 
+      viewBox={`${minX} 0 ${treeWidth} ${treeHeight}`} 
+      className="mx-auto" 
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <defs>
+        {/* Create gradients for each edge */}
+        {edges.map(edge => {
+          const fromNode = getNodeById(edge.from);
+          const toNode = getNodeById(edge.to);
+          if (!fromNode || !toNode) return null;
+          
+          return (
+            <linearGradient key={`grad-${edge.id}`} id={`grad-${edge.id}`} gradientUnits="userSpaceOnUse"
+              x1={fromNode.x} y1={fromNode.y} x2={toNode.x} y2={toNode.y}>
+              <stop offset="5%" stopColor={getLevelColor(fromNode.level)} />
+              <stop offset="95%" stopColor={getLevelColor(toNode.level)} />
+            </linearGradient>
+          );
+        })}
+      </defs>
+
+      {/* Draw edges (paths) */}
+      {edges.map(edge => {
+        const fromNode = getNodeById(edge.from);
+        const toNode = getNodeById(edge.to);
+        if (!fromNode || !toNode) return null;
+
+        const pathData = createCurvePath(fromNode.x, fromNode.y, toNode.x, toNode.y, fromNode, toNode);
+        const pathLength = calculatePathLength(fromNode.x, fromNode.y, toNode.x, toNode.y);
+        const startTime = edge.guessIndex * animationDelay;
+
+        return (
+          <path
+            key={edge.id}
+            d={pathData}
+            fill="none"
+            stroke={`url(#grad-${edge.id})`}
+            strokeWidth="3"
+            strokeDasharray={pathLength}
+            strokeDashoffset={pathLength}
+          >
+            <animate
+              attributeName="stroke-dashoffset"
+              from={pathLength}
+              to="0"
+              dur={`${animationDuration}s`}
+              begin={`${startTime}s`}
+              fill="freeze"
+            />
+          </path>
+        );
+      })}
+
+      {/* Draw nodes */}
+      {positionedNodes.map(node => {
+        const startTime = (node.guessIndex || 0) * animationDelay;
+        const color = getLevelColor(node.level);
+        const isAnswer = node.isAnswer;
+        const isGenus = node.level === 'genus';
+        const textWidth = node.name.length * 8.5;
+        const rectWidth = Math.max(textWidth + 24, 90);
+        
+        // Split long names into multiple lines if needed
+        const maxCharsPerLine = 20;
+        const words = node.name.split(' ');
+        const lines = [];
+        let currentLine = '';
+        
+        words.forEach(word => {
+          if ((currentLine + word).length > maxCharsPerLine && currentLine.length > 0) {
+            lines.push(currentLine.trim());
+            currentLine = word + ' ';
+          } else {
+            currentLine += word + ' ';
+          }
+        });
+        if (currentLine.trim()) lines.push(currentLine.trim());
+        
+        const rectHeight = Math.max(30, lines.length * 16 + 8);
+        
+        // Styling for genus nodes
+        const nodeFill = isGenus ? (isAnswer ? color : '#FFFFFF') : color;
+        const nodeStroke = isGenus ? color : color;
+        const nodeStrokeWidth = isGenus ? '2' : '1';
+        const textFill = isGenus ? (isAnswer ? 'white' : color) : 'white';
+        const borderRadius = isGenus ? '0' : '5';
+
+        return (
+          <g key={node.id}>
+            {/* Node rectangle */}
+            <rect
+              x={node.x - rectWidth / 2}
+              y={node.y - rectHeight / 2}
+              width={rectWidth}
+              height={rectHeight}
+              rx={borderRadius}
+              fill={nodeFill}
+              stroke={nodeStroke}
+              strokeWidth={nodeStrokeWidth}
+              opacity="0"
+              style={{ filter: 'drop-shadow(2px 3px 2px rgba(0,0,0,0.3))' }}
+            >
+              <animate
+                attributeName="opacity"
+                from="0"
+                to="1"
+                dur={`${animationDuration}s`}
+                begin={`${startTime + animationDuration}s`}
+                fill="freeze"
+              />
+            </rect>
+            
+            {/* Node text - multi-line support */}
+            {lines.map((line, lineIndex) => (
+              <text
+                key={lineIndex}
+                x={node.x}
+                y={node.y - (lines.length - 1) * 8 + lineIndex * 16}
+                textAnchor="middle"
+                fill={textFill}
+                fontSize="13"
+                fontWeight={node.level === 'family' || node.level === 'order' ? 'bold' : 'normal'}
+                fontFamily="monospace"
+                opacity="0"
+              >
+                {line}
+                <animate
+                  attributeName="opacity"
+                  from="0"
+                  to="1"
+                  dur={`${animationDuration}s`}
+                  begin={`${startTime + animationDuration}s`}
+                  fill="freeze"
+                />
+              </text>
+            ))}
+
+            {/* Pulsing ring for correct answer */}
+            {isAnswer && (
+              <circle
+                cx={node.x}
+                cy={node.y}
+                r={Math.max(rectWidth, rectHeight) / 2 + 8}
+                fill="none"
+                stroke="#F59E0B"
+                strokeWidth="3"
+                opacity="0.7"
+              >
+                <animate
+                  attributeName="r"
+                  from={Math.max(rectWidth, rectHeight) / 2 + 8}
+                  to={Math.max(rectWidth, rectHeight) / 2 + 18}
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  from="0.7"
+                  to="0"
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
+const Arachnooa = () => {
+  const [mysterySpider, setMysterySpider] = useState(null);
+  const [guesses, setGuesses] = useState([]);
+  const [currentGuess, setCurrentGuess] = useState('');
+  const [gameWon, setGameWon] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [showHelp, setShowHelp] = useState(false);
+
+  useEffect(() => {
+    setMysterySpider(getDailySpider());
+  }, []);
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setCurrentGuess(value);
+
+    if (value.length > 0) {
+      const searchLower = value.toLowerCase();
+      const filtered = spiderDatabase
+        .filter(spider => 
+          spider.searchTerms.some(term => term.includes(searchLower))
+        )
+        .slice(0, 8);
+      setFilteredSuggestions(filtered);
+    } else {
+      setFilteredSuggestions([]);
+    }
+  };
+
+  const findCommonAncestor = (guess, mystery) => {
+    if (guess.genus === mystery.genus) {
+      return { level: 'genus', name: guess.genus, isCorrect: true };
+    }
+    if (guess.subfamily && mystery.subfamily && guess.subfamily === mystery.subfamily) {
+      return { level: 'subfamily', name: guess.subfamily, isCorrect: false };
+    }
+    if (guess.family === mystery.family) {
+      return { level: 'family', name: guess.family, isCorrect: false };
+    }
+    return { level: 'order', name: 'Araneae', isCorrect: false };
+  };
+
+  const handleGuess = (spider) => {
+    if (!spider || !mysterySpider) return;
+    
+    // Check if already guessed
+    if (guesses.some(g => g.spider.genus === spider.genus)) {
+      setCurrentGuess('');
+      setFilteredSuggestions([]);
+      return;
+    }
+
+    const commonAncestor = findCommonAncestor(spider, mysterySpider);
+    const newGuess = {
+      spider,
+      commonAncestor,
+      timestamp: Date.now()
+    };
+
+    setGuesses([...guesses, newGuess]);
+    setCurrentGuess('');
+    setFilteredSuggestions([]);
+
+    if (commonAncestor.isCorrect) {
+      setGameWon(true);
+    }
+  };
+
+  const handleSuggestionClick = (spider) => {
+    handleGuess(spider);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && filteredSuggestions.length > 0) {
+      handleGuess(filteredSuggestions[0]);
+    }
+  };
+
+  const resetGame = () => {
+    setGuesses([]);
+    setGameWon(false);
+    setCurrentGuess('');
+    setFilteredSuggestions([]);
+    setMysterySpider(getDailySpider());
+  };
+
+  const getLevelColor = (level) => {
+    switch (level) {
+      case 'genus': return 'bg-green-500';
+      case 'subfamily': return 'bg-yellow-500';
+      case 'family': return 'bg-orange-500';
+      case 'order': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getLevelText = (level) => {
+    switch (level) {
+      case 'genus': return 'Genus Match! 🎉';
+      case 'subfamily': return 'Subfamily';
+      case 'family': return 'Family';
+      case 'order': return 'Order (Spiders)';
+      default: return 'No match';
+    }
+  };
+
+  if (!mysterySpider) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8 pt-8">
+          <h1 className="text-5xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            🕷️ ARACHNOOA 🕷️
+          </h1>
+          <p className="text-gray-300 text-lg">Guess the spider genus of the day!</p>
+          <div className="flex items-center justify-center gap-4 mt-4">
+            <div className="text-sm text-gray-400">
+              Guesses: {guesses.length}/20
+            </div>
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <HelpCircle size={20} />
+            </button>
+            <button
+              onClick={resetGame}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <RotateCcw size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Help Section */}
+        {showHelp && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6">
+            <h3 className="text-xl font-bold mb-3">How to Play</h3>
+            <ul className="space-y-2 text-gray-300">
+              <li>• Guess spider genera to identify today's mystery spider</li>
+              <li>• Each guess reveals how taxonomically close you are</li>
+              <li>• <span className="text-green-400">Green (Genus)</span> = Correct answer!</li>
+              <li>• <span className="text-yellow-400">Yellow (Subfamily)</span> = Same subfamily</li>
+              <li>• <span className="text-orange-400">Orange (Family)</span> = Same family</li>
+              <li>• <span className="text-red-400">Red (Order)</span> = Only share being spiders</li>
+              <li>• You have 20 guesses to find the answer</li>
+            </ul>
+          </div>
+        )}
+
+        {/* Win Message */}
+        {gameWon && (
+          <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-lg rounded-xl p-6 mb-6 border-2 border-green-500">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <Award size={32} className="text-yellow-400" />
+              <h2 className="text-3xl font-bold">You Won!</h2>
+              <Award size={32} className="text-yellow-400" />
+            </div>
+            <p className="text-center text-xl">
+              The answer was <span className="font-bold text-green-400">{mysterySpider.genus}</span>
+            </p>
+            <p className="text-center text-gray-300 mt-2">
+              ({mysterySpider.commonName})
+            </p>
+            <p className="text-center text-gray-400 mt-1">
+              Family: {mysterySpider.family}
+              {mysterySpider.subfamily && ` • Subfamily: ${mysterySpider.subfamily}`}
+            </p>
+            <p className="text-center text-lg mt-4">
+              Found in {guesses.length} guess{guesses.length !== 1 ? 'es' : ''}!
+            </p>
+          </div>
+        )}
+
+        {/* Search Input */}
+        {!gameWon && guesses.length < 20 && (
+          <div className="mb-6 relative">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                value={currentGuess}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                placeholder="Type a spider name (e.g., black widow, wolf spider, Latrodectus)..."
+                className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-lg border-2 border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 transition-colors"
+                autoFocus
+              />
+            </div>
+
+            {/* Suggestions Dropdown */}
+            {filteredSuggestions.length > 0 && (
+              <div className="absolute w-full mt-2 bg-slate-800 backdrop-blur-lg rounded-xl shadow-2xl border-2 border-white/20 overflow-hidden z-10">
+                {filteredSuggestions.map((spider, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => handleSuggestionClick(spider)}
+                    className="px-4 py-3 hover:bg-purple-600/30 cursor-pointer transition-colors border-b border-white/10 last:border-b-0"
+                  >
+                    <div className="font-bold text-lg">{spider.genus}</div>
+                    <div className="text-sm text-gray-400">{spider.commonName}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {spider.family}{spider.subfamily && ` • ${spider.subfamily}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Game Over Message */}
+        {!gameWon && guesses.length >= 20 && (
+          <div className="bg-red-500/20 backdrop-blur-lg rounded-xl p-6 mb-6 border-2 border-red-500">
+            <h2 className="text-2xl font-bold text-center mb-3">Game Over!</h2>
+            <p className="text-center text-xl">
+              The answer was <span className="font-bold text-red-400">{mysterySpider.genus}</span>
+            </p>
+            <p className="text-center text-gray-300 mt-2">
+              ({mysterySpider.commonName})
+            </p>
+          </div>
+        )}
+
+        {/* Phylogenetic Tree Display */}
+        {guesses.length > 0 && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8">
+            <h3 className="text-xl font-bold mb-6 text-center">Phylogenetic Tree</h3>
+            <SVGTree guesses={guesses} mysterySpider={mysterySpider} />
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="text-center mt-8 text-gray-400 text-sm pb-8">
+          <p>A new spider genus every day!</p>
+          <p className="mt-1">Database includes {spiderDatabase.length} spider genera</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Arachnooa;
